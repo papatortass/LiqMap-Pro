@@ -1,0 +1,5 @@
+{
+  "name": "LiqMap Pro",
+  "description": "A professional-grade crypto liquidation heatmap visualizer using Binance market data. It calculates and visualizes estimated liquidation clusters to help traders identify high-risk liquidity zones.",
+  "requestFramePermissions": []
+}
