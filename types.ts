@@ -70,11 +70,14 @@ export type DrawingToolType =
     | 'ray'
     | 'arrow'
     | 'ruler'
+    | 'long'
+    | 'short'
     | 'horizontal' 
     | 'vertical' 
     | 'fib' 
     | 'rectangle'
-    | 'circle';
+    | 'circle'
+    | 'brush';
 
 export interface ChartPoint {
     time: number; // Unix timestamp
