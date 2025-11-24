@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { fetchCandles } from './services/binanceService';
 import { calculateHeatmapData } from './utils/heatmapMath';
 import { Candle, HeatmapSnapshot, Timeframe, HeatmapTheme, CrosshairData } from './types';
@@ -10,66 +10,104 @@ function App() {
   const [candles, setCandles] = useState<Candle[]>([]);
   const [heatmapData, setHeatmapData] = useState<HeatmapSnapshot[]>([]);
   const [globalMaxDensity, setGlobalMaxDensity] = useState<number>(1);
+  const [bucketSize, setBucketSize] = useState<number>(10);
   
   // UI State
   const [symbol, setSymbol] = useState<string>('BTCUSDT');
-  // Default: 1D Timeframe, 3x Leverage as requested
   const [timeframe, setTimeframe] = useState<Timeframe>('1d');
+  const [history, setHistory] = useState<string>('1y'); 
   const [leverage, setLeverage] = useState<number>(3);
   
   // Visualization Settings
   const [noiseFilter, setNoiseFilter] = useState<number>(0.10); 
   const [sensitivity, setSensitivity] = useState<number>(1.5); 
-  // Defaults: Cloud Mode ON, Local Normalization ON
   const [cloudMode, setCloudMode] = useState<boolean>(true); 
   const [localNormalization, setLocalNormalization] = useState<boolean>(true);
   
   // Hover State
   const [hoveredStats, setHoveredStats] = useState<CrosshairData | null>(null);
 
-  // Theme matched to Mesh Reference (Dark Blue -> Green -> Orange -> Red)
+  // Theme matched to Mesh Reference
   const [theme, setTheme] = useState<HeatmapTheme>({
-      low: '#1e3a8a',     // Deep Blue
-      medium: '#22c55e',  // Vibrant Green
-      high: '#f97316',    // Orange
-      extreme: '#dc2626'  // Deep Red
+      low: '#1e3a8a',
+      medium: '#22c55e',
+      high: '#f97316',
+      extreme: '#dc2626'
   });
 
   const [isCalculating, setIsCalculating] = useState<boolean>(false);
 
+  // --- DYNAMIC LIMIT CALCULATION ---
+  const getMinutesFromTimeframe = (tf: Timeframe): number => {
+      const mapping: {[key: string]: number} = {
+          '1m': 1, '3m': 3, '5m': 5, '15m': 15, '30m': 30,
+          '1h': 60, '2h': 120, '4h': 240, '6h': 360, '8h': 480, '12h': 720,
+          '1d': 1440, '3d': 4320, '1w': 10080, '1M': 43200
+      };
+      return mapping[tf] || 1440;
+  };
+
+  const getMinutesFromHistory = (hist: string): number => {
+      if (hist === 'max') return 20 * 365 * 24 * 60; 
+
+      const mapping: {[key: string]: number} = {
+          '12h': 720,
+          '1d': 1440, '3d': 4320, '1w': 10080,
+          '1M': 43200, '3M': 129600, '6M': 259200,
+          '1y': 525600, '2y': 1051200, '3y': 1576800, '5y': 2628000
+      };
+      return mapping[hist] || 525600;
+  };
+
   useEffect(() => {
+    let isMounted = true;
+    let timeoutId: number;
+
     const loadData = async () => {
+      if (!isMounted) return;
       setIsCalculating(true);
+      
       try {
-        const isLongTimeframe = ['1d', '3d', '1w', '1M'].includes(timeframe);
-        const limit = isLongTimeframe ? 500 : 1500;
+        const tfMins = getMinutesFromTimeframe(timeframe);
+        const histMins = getMinutesFromHistory(history);
+        let requiredCandles = Math.ceil(histMins / tfMins);
+        const limit = Math.max(20, requiredCandles);
+        
         const data = await fetchCandles(symbol, timeframe, limit);
-        setCandles(data);
+        
+        if (isMounted) {
+            setCandles(data);
+        }
       } catch (error) {
         console.error("Error loading market data", error);
       } finally {
-        setIsCalculating(false);
+        if (isMounted) {
+            setIsCalculating(false);
+            timeoutId = window.setTimeout(loadData, 60000);
+        }
       }
     };
 
     loadData();
-    const interval = setInterval(loadData, 60000);
-    return () => clearInterval(interval);
-  }, [timeframe, symbol]);
 
-  // --- ASYNC CALCULATION (Time-Slicing Simulation) ---
-  // Real web worker is hard in this env, using setTimeout to unblock main thread slightly
+    return () => {
+        isMounted = false;
+        window.clearTimeout(timeoutId);
+    };
+  }, [timeframe, symbol, history]); 
+
+  // Heatmap Calculation Effect
   useEffect(() => {
     if (candles.length === 0) return;
 
     setIsCalculating(true);
     
-    // Short timeout allows UI to render "Calculating..." state first
     const timer = setTimeout(() => {
       const currentPrice = candles[candles.length - 1].close;
-      const bucketSize = currentPrice * 0.0025; 
+      const calcBucketSize = currentPrice * 0.0025; 
+      setBucketSize(calcBucketSize);
 
-      const { snapshots, globalMaxDensity } = calculateHeatmapData(candles, leverage, bucketSize);
+      const { snapshots, globalMaxDensity } = calculateHeatmapData(candles, leverage, calcBucketSize);
       
       setHeatmapData(snapshots);
       setGlobalMaxDensity(globalMaxDensity);
@@ -85,6 +123,8 @@ function App() {
       <Controls 
         timeframe={timeframe}
         setTimeframe={setTimeframe}
+        history={history}
+        setHistory={setHistory}
         leverage={leverage}
         setLeverage={setLeverage}
         noiseFilter={noiseFilter}
@@ -112,18 +152,18 @@ function App() {
             theme={theme}
             cloudMode={cloudMode}
             localNormalization={localNormalization}
+            timeframe={timeframe}
+            bucketSize={bucketSize}
             onCrosshairMove={setHoveredStats}
           />
           
-          {/* HUD Legend & Stats - MOVED TO LEFT SIDE */}
-          <div className="absolute top-6 left-6 z-20 pointer-events-none flex flex-col gap-4">
+          <div className="absolute bottom-10 right-24 z-20 pointer-events-none flex flex-col gap-4 items-end">
              
-             {/* 1. Hover Stats Panel (Only visible when hovering data) */}
              {hoveredStats && (
-                 <div className="bg-[#050505]/80 backdrop-blur-xl p-4 rounded border border-blue-500/20 shadow-[0_0_30px_rgba(37,99,235,0.1)] min-w-[180px] animate-in fade-in duration-200 slide-in-from-left-4">
-                    <div className="flex items-center gap-2 mb-3 border-b border-white/10 pb-2">
-                        <Activity size={12} className="text-blue-400" />
+                 <div className="bg-[#050505]/80 backdrop-blur-xl p-4 rounded border border-blue-500/20 shadow-[0_0_30px_rgba(37,99,235,0.1)] min-w-[180px] animate-in fade-in duration-200 slide-in-from-right-4">
+                    <div className="flex items-center gap-2 mb-3 border-b border-white/10 pb-2 justify-end">
                         <span className="text-[10px] font-bold text-blue-100 uppercase tracking-widest">Target Info</span>
+                        <Activity size={12} className="text-blue-400" />
                     </div>
                     <div className="flex flex-col gap-1.5">
                         <div className="flex justify-between text-xs">
@@ -144,13 +184,12 @@ function App() {
                  </div>
              )}
 
-             {/* 2. Density Legend */}
              <div className="bg-[#050505]/70 backdrop-blur-md p-4 rounded border border-white/5 shadow-2xl min-w-[180px]">
-                <div className="flex items-center gap-2 mb-4 border-b border-white/5 pb-2">
-                    <BarChart3 size={12} className="text-gray-500" />
+                <div className="flex items-center gap-2 mb-4 border-b border-white/5 pb-2 justify-end">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">
                         {localNormalization ? 'LOCAL DENSITY' : 'GLOBAL DENSITY'}
                     </span>
+                    <BarChart3 size={12} className="text-gray-500" />
                 </div>
                 
                 <div className="flex flex-col gap-3">
@@ -174,8 +213,7 @@ function App() {
              </div>
           </div>
 
-          {/* Watermark - Moved to Bottom Right */}
-          <div className="absolute bottom-4 right-20 z-20 pointer-events-none opacity-30">
+          <div className="absolute bottom-4 left-6 z-20 pointer-events-none opacity-30">
               <span className="text-[10px] font-mono text-gray-500">BINANCE FUTURES // PERPETUAL DATA</span>
           </div>
       </div>

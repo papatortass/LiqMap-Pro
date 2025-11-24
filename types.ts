@@ -61,3 +61,36 @@ export interface CrosshairData {
   density: number;
   normalizedDensity: number;
 }
+
+// --- Drawing Tools Types ---
+
+export type DrawingToolType = 
+    | 'cursor' 
+    | 'trend' 
+    | 'ray'
+    | 'arrow'
+    | 'ruler'
+    | 'horizontal' 
+    | 'vertical' 
+    | 'fib' 
+    | 'rectangle'
+    | 'circle';
+
+export interface ChartPoint {
+    time: number; // Unix timestamp
+    price: number;
+}
+
+export interface DrawingStyle {
+    color: string;
+    lineWidth: number;
+    lineStyle: 'solid' | 'dashed' | 'dotted';
+    fillOpacity: number; // 0 to 1
+}
+
+export interface Drawing {
+    id: string;
+    type: DrawingToolType;
+    points: ChartPoint[]; 
+    style: DrawingStyle;
+}

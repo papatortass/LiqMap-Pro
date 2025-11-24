@@ -1,11 +1,13 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Timeframe, HeatmapTheme } from '../types';
-import { Activity, Zap, Coins, Cloud, CloudOff, TrendingUp, Palette, Sliders, Clock, Maximize, Minimize } from 'lucide-react';
+import { Activity, Zap, Coins, Cloud, CloudOff, TrendingUp, Sliders, Clock, Maximize, Minimize, CalendarClock } from 'lucide-react';
 
 interface ControlsProps {
   timeframe: Timeframe;
   setTimeframe: (t: Timeframe) => void;
+  history: string;
+  setHistory: (h: string) => void;
   leverage: number;
   setLeverage: (l: number) => void;
   noiseFilter: number;
@@ -26,6 +28,8 @@ interface ControlsProps {
 const Controls: React.FC<ControlsProps> = ({
   timeframe,
   setTimeframe,
+  history,
+  setHistory,
   leverage,
   setLeverage,
   noiseFilter,
@@ -42,31 +46,54 @@ const Controls: React.FC<ControlsProps> = ({
   setLocalNormalization,
   isCalculating
 }) => {
-  // Full list of supported timeframes
   const timeframes: Timeframe[] = [
     '1m', '3m', '5m', '15m', '30m', 
     '1h', '2h', '4h', '6h', '8h', '12h', 
     '1d', '3d', '1w', '1M'
   ];
-  
-  const assets = [
-    { value: 'BTCUSDT', label: 'BTC' },
-    { value: 'ETHUSDT', label: 'ETH' },
-    { value: 'SOLUSDT', label: 'SOL' },
-    { value: 'BNBUSDT', label: 'BNB' },
-    { value: 'XRPUSDT', label: 'XRP' },
-    { value: 'DOGEUSDT', label: 'DOGE' },
-    { value: 'AVAXUSDT', label: 'AVAX' },
-    { value: 'PEPEUSDT', label: 'PEPE' },
-    { value: 'WIFUSDT', label: 'WIF' },
-  ];
 
+  const historyOptions = [
+    { label: '12H', value: '12h' },
+    { label: '1D', value: '1d' },
+    { label: '3D', value: '3d' },
+    { label: '1W', value: '1w' },
+    { label: '1M', value: '1M' },
+    { label: '3M', value: '3M' },
+    { label: '6M', value: '6M' },
+    { label: '1Y', value: '1y' },
+    { label: '2Y', value: '2y' },
+    { label: '3Y', value: '3y' },
+    { label: '5Y', value: '5y' },
+    { label: 'Max', value: 'max' },
+  ];
+  
   const colorKeys: (keyof HeatmapTheme)[] = ['low', 'medium', 'high', 'extreme'];
+
+  // Local state for input
+  const [tickerInput, setTickerInput] = useState(symbol);
+
+  // Sync if symbol changes externally
+  useEffect(() => {
+    setTickerInput(symbol);
+  }, [symbol]);
+
+  const handleTickerSubmit = () => {
+    if (tickerInput.trim()) {
+        setSymbol(tickerInput.toUpperCase().trim());
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+        handleTickerSubmit();
+        (e.currentTarget as HTMLInputElement).blur();
+    }
+  };
 
   return (
     <div className="w-full h-16 bg-[#050505]/90 backdrop-blur-xl border-b border-white/5 px-4 xl:px-6 flex items-center justify-between z-50 shadow-2xl">
       
-      {/* Left Group: Identity & Data Controls (Asset, Time, Lev) */}
+      {/* Left Group: Identity & Data Controls */}
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-blue-600/10 rounded flex items-center justify-center border border-blue-500/20 shadow-[0_0_10px_rgba(37,99,235,0.2)]">
@@ -80,21 +107,21 @@ const Controls: React.FC<ControlsProps> = ({
         <div className="h-8 w-px bg-white/10 hidden sm:block"></div>
 
         <div className="flex items-center gap-2">
-            {/* Asset Selector */}
+            {/* Asset Input (Direct Typing) */}
             <div className="relative group">
-                <Coins size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none group-hover:text-blue-400 transition-colors" />
-                <select 
-                    value={symbol} 
-                    onChange={(e) => setSymbol(e.target.value)}
-                    className="pl-9 pr-8 py-1.5 bg-white/5 border border-white/5 hover:border-white/10 hover:bg-white/10 text-sm text-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition-all cursor-pointer font-mono uppercase w-32"
-                >
-                    {assets.map(asset => (
-                        <option key={asset.value} value={asset.value}>{asset.label}</option>
-                    ))}
-                </select>
+                <Coins size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none group-hover:text-blue-400 transition-colors z-10" />
+                <input 
+                  type="text"
+                  value={tickerInput}
+                  onChange={(e) => setTickerInput(e.target.value.toUpperCase())}
+                  onKeyDown={handleKeyDown}
+                  onBlur={handleTickerSubmit}
+                  className="pl-9 pr-4 py-1.5 bg-white/5 border border-white/5 hover:border-white/10 hover:bg-white/10 text-sm text-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition-all font-mono uppercase w-36 placeholder-gray-600"
+                  placeholder="BTCUSDT"
+                />
             </div>
 
-            {/* Timeframe Selector (Compact) */}
+            {/* Timeframe Selector */}
             <div className="relative group">
                 <Clock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none group-hover:text-blue-400 transition-colors" />
                 <select 
@@ -108,6 +135,20 @@ const Controls: React.FC<ControlsProps> = ({
                 </select>
             </div>
 
+            {/* History / Lookback Selector */}
+            <div className="relative group">
+                <CalendarClock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none group-hover:text-blue-400 transition-colors" />
+                <select 
+                    value={history} 
+                    onChange={(e) => setHistory(e.target.value)}
+                    className="pl-9 pr-8 py-1.5 bg-white/5 border border-white/5 hover:border-white/10 hover:bg-white/10 text-sm text-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition-all cursor-pointer font-mono uppercase w-24"
+                >
+                    {historyOptions.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                </select>
+            </div>
+
              {/* Leverage Selector */}
              <div className="relative group hidden md:block">
                 <TrendingUp size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none group-hover:text-blue-400 transition-colors" />
@@ -116,7 +157,6 @@ const Controls: React.FC<ControlsProps> = ({
                     onChange={(e) => setLeverage(Number(e.target.value))}
                     className="pl-9 pr-8 py-1.5 bg-white/5 border border-white/5 hover:border-white/10 hover:bg-white/10 text-sm text-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition-all cursor-pointer font-mono w-28"
                 >
-                    <option value={1}>1x Spot</option>
                     <option value={2}>2x Safe</option>
                     <option value={3}>3x Low</option>
                     <option value={5}>5x Low</option>
@@ -219,7 +259,6 @@ const Controls: React.FC<ControlsProps> = ({
             </div>
         </div>
 
-        {/* Pulse Indicator */}
         <div className="flex items-center justify-center w-6">
             {isCalculating ? (
                  <div className="animate-spin text-yellow-500"><Zap size={14} /></div>
