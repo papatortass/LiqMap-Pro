@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { fetchCandles } from './services/binanceService';
+import { fetchCandles, fetchExchangeSymbols } from './services/binanceService';
 import { calculateHeatmapData } from './utils/heatmapMath';
 import { Candle, HeatmapSnapshot, Timeframe, HeatmapTheme, CrosshairData } from './types';
 import LiquidationChart from './components/LiquidationChart';
@@ -14,6 +14,7 @@ function App() {
   
   // UI State
   const [symbol, setSymbol] = useState<string>('BTCUSDT');
+  const [allSymbols, setAllSymbols] = useState<string[]>([]);
   const [timeframe, setTimeframe] = useState<Timeframe>('1d');
   const [history, setHistory] = useState<string>('1y'); 
   const [leverage, setLeverage] = useState<number>(3);
@@ -58,6 +59,17 @@ function App() {
       };
       return mapping[hist] || 525600;
   };
+
+  // Load available symbols on mount
+  useEffect(() => {
+    const loadSymbols = async () => {
+        const symbols = await fetchExchangeSymbols();
+        if (symbols && symbols.length > 0) {
+            setAllSymbols(symbols);
+        }
+    };
+    loadSymbols();
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -140,6 +152,7 @@ function App() {
         localNormalization={localNormalization}
         setLocalNormalization={setLocalNormalization}
         isCalculating={isCalculating}
+        allSymbols={allSymbols}
       />
 
       <div className="relative flex-1 w-full h-full">

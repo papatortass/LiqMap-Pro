@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Timeframe, HeatmapTheme } from '../types';
 import { Activity, Zap, Coins, Cloud, CloudOff, TrendingUp, Sliders, Clock, Maximize, Minimize, CalendarClock } from 'lucide-react';
 
@@ -23,7 +22,18 @@ interface ControlsProps {
   localNormalization: boolean;
   setLocalNormalization: (b: boolean) => void;
   isCalculating: boolean;
+  allSymbols?: string[];
 }
+
+const POPULAR_PAIRS = [
+    "BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT", 
+    "DOGEUSDT", "ADAUSDT", "AVAXUSDT", "LINKUSDT", "WIFUSDT",
+    "PEPEUSDT", "SHIBUSDT", "NEARUSDT", "FETUSDT", "RNDRUSDT",
+    "ARBUSDT", "OPUSDT", "SUIUSDT", "APTUSDT", "INJUSDT", 
+    "TIAUSDT", "SEIUSDT", "ORDIUSDT", "BONKUSDT", "LTCUSDT",
+    "MATICUSDT", "DOTUSDT", "TRXUSDT", "UNIUSDT", "ATOMUSDT",
+    "FILUSDT", "JUPUSDT", "PYTHUSDT", "IMXUSDT", "STXUSDT"
+];
 
 const Controls: React.FC<ControlsProps> = ({
   timeframe,
@@ -44,7 +54,8 @@ const Controls: React.FC<ControlsProps> = ({
   setCloudMode,
   localNormalization,
   setLocalNormalization,
-  isCalculating
+  isCalculating,
+  allSymbols = []
 }) => {
   const timeframes: Timeframe[] = [
     '1m', '3m', '5m', '15m', '30m', 
@@ -71,21 +82,51 @@ const Controls: React.FC<ControlsProps> = ({
 
   // Local state for input
   const [tickerInput, setTickerInput] = useState(symbol);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   // Sync if symbol changes externally
   useEffect(() => {
     setTickerInput(symbol);
   }, [symbol]);
 
+  const suggestions = useMemo(() => {
+    const input = tickerInput.toUpperCase().trim();
+    // Use the comprehensive list if available, otherwise fallback to popular list
+    const sourceList = allSymbols.length > 0 ? allSymbols : POPULAR_PAIRS;
+
+    if (!input) {
+        // Just show popular pairs as "Trending" default if no input
+        return POPULAR_PAIRS.slice(0, 15);
+    }
+    
+    // Filter and Sort
+    const matches = sourceList.filter(p => p.includes(input));
+    matches.sort((a, b) => {
+        const aStarts = a.startsWith(input);
+        const bStarts = b.startsWith(input);
+        if (aStarts && !bStarts) return -1;
+        if (!aStarts && bStarts) return 1;
+        // Prefer shorter symbols (e.g. searching "ETH" -> "ETHUSDT" over "ETHBTC")
+        return a.length - b.length || a.localeCompare(b);
+    });
+
+    return matches.slice(0, 50);
+  }, [tickerInput, allSymbols]);
+
   const handleTickerSubmit = () => {
     if (tickerInput.trim()) {
         setSymbol(tickerInput.toUpperCase().trim());
+        setShowSuggestions(false);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
         handleTickerSubmit();
+        (e.currentTarget as HTMLInputElement).blur();
+        setShowSuggestions(false);
+    } else if (e.key === 'Escape') {
+        setShowSuggestions(false);
         (e.currentTarget as HTMLInputElement).blur();
     }
   };
@@ -107,18 +148,58 @@ const Controls: React.FC<ControlsProps> = ({
         <div className="h-8 w-px bg-white/10 hidden sm:block"></div>
 
         <div className="flex items-center gap-2">
-            {/* Asset Input (Direct Typing) */}
+            {/* Asset Input (Search with Suggestions) */}
             <div className="relative group">
                 <Coins size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none group-hover:text-blue-400 transition-colors z-10" />
                 <input 
                   type="text"
                   value={tickerInput}
-                  onChange={(e) => setTickerInput(e.target.value.toUpperCase())}
+                  onChange={(e) => {
+                    setTickerInput(e.target.value.toUpperCase());
+                    setShowSuggestions(true);
+                  }}
+                  onFocus={() => setShowSuggestions(true)}
+                  onBlur={() => {
+                      // Small delay to allow click event to register on suggestions
+                      setTimeout(() => {
+                          handleTickerSubmit();
+                          setShowSuggestions(false);
+                      }, 200);
+                  }}
                   onKeyDown={handleKeyDown}
-                  onBlur={handleTickerSubmit}
                   className="pl-9 pr-4 py-1.5 bg-white/5 border border-white/5 hover:border-white/10 hover:bg-white/10 text-sm text-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition-all font-mono uppercase w-36 placeholder-gray-600"
-                  placeholder="BTCUSDT"
+                  placeholder="Search..."
+                  autoComplete="off"
                 />
+                
+                {/* Suggestions Dropdown */}
+                {showSuggestions && (
+                    <div className="absolute top-full left-0 w-48 mt-1 bg-[#0a0a0a] border border-white/10 rounded-md shadow-[0_10px_40px_rgba(0,0,0,0.5)] overflow-hidden z-[60] py-1 max-h-[300px] overflow-y-auto custom-scrollbar">
+                        <div className="text-[10px] font-bold text-gray-500 px-3 py-1.5 uppercase tracking-wider bg-white/5 mb-1 sticky top-0 backdrop-blur-sm flex justify-between">
+                            <span>{tickerInput ? 'Matches' : 'Popular'}</span>
+                            {allSymbols.length > 0 && <span className="text-[9px] text-blue-500/80">API LINKED</span>}
+                        </div>
+                        {suggestions.length > 0 ? (
+                             suggestions.map(s => (
+                                <button 
+                                    key={s}
+                                    onMouseDown={(e) => {
+                                        e.preventDefault(); // Prevent input blur
+                                        setTickerInput(s);
+                                        setSymbol(s);
+                                        setShowSuggestions(false);
+                                    }}
+                                    className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-blue-500/10 hover:text-blue-200 transition-colors font-mono border-l-2 border-transparent hover:border-blue-500 flex items-center justify-between"
+                                >
+                                    <span>{s}</span>
+                                    {/* Optional: Add small trend icon or similar if desired, keeping it simple for now */}
+                                </button>
+                            ))
+                        ) : (
+                            <div className="px-3 py-2 text-xs text-gray-600 italic text-center">No matches found</div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Timeframe Selector */}

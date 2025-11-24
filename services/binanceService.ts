@@ -13,6 +13,22 @@ const mapToSpotSymbol = (symbol: string): string => {
   return symbol;
 };
 
+export const fetchExchangeSymbols = async (): Promise<string[]> => {
+  try {
+    const response = await fetch(`${FAPI_URL}/exchangeInfo`);
+    if (!response.ok) return [];
+    
+    const data = await response.json();
+    return data.symbols
+        .filter((s: any) => s.contractType === 'PERPETUAL' && s.quoteAsset === 'USDT' && s.status === 'TRADING')
+        .map((s: any) => s.symbol)
+        .sort();
+  } catch (error) {
+    console.error("Failed to fetch symbols:", error);
+    return [];
+  }
+};
+
 export const fetchCandles = async (symbol: string, interval: Timeframe, totalLimit: number = 500): Promise<Candle[]> => {
   // OPTIMIZATION: Store raw data arrays instead of objects to save memory during massive fetches
   const rawChunks: any[][] = [];
