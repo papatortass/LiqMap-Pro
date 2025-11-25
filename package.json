@@ -1,5 +1,5 @@
 {
-  "name": "univ3-lp-&-hedge-simulator",
+  "name": "liqmap-pro",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,9 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "recharts": "^3.4.1",
+    "react-dom": "^19.2.0",
+    "lucide-react": "^0.554.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "lightweight-charts": "^5.0.9"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
