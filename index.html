@@ -3,129 +3,36 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LiqMap Pro - Terminal</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>LP Hedge Simulator</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-              mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
-            },
-            colors: {
-              gray: {
-                850: '#1f2937',
-                900: '#111827',
-                925: '#0a0a0a', 
-                950: '#050505', // Ultra Dark
-              },
-            },
-          },
-        },
-      }
-    </script>
     <style>
-      body {
-        background-color: #050505;
-        color: #e5e7eb;
-        font-family: 'Inter', sans-serif;
-      }
-      
-      /* Sleek Scrollbar */
+      /* Custom Scrollbar for Webkit */
       ::-webkit-scrollbar {
-        width: 5px;
-        height: 5px;
+        width: 8px;
+        height: 8px;
       }
       ::-webkit-scrollbar-track {
-        background: transparent; 
+        background: #1f2937; 
       }
       ::-webkit-scrollbar-thumb {
-        background: #333; 
-        border-radius: 2px;
+        background: #4b5563; 
+        border-radius: 4px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #555; 
+        background: #6b7280; 
       }
-
-      /* === MODERN RANGE SLIDER STYLES === */
-      input[type=range] {
-        -webkit-appearance: none; /* Hides default slider */
-        width: 100%; 
-        background: transparent; 
-        height: 20px; /* Large enough to hold the thumb */
-        cursor: pointer;
-      }
-
-      /* WEBKIT (Chrome, Safari, Edge) */
-      input[type=range]::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        height: 14px;
-        width: 14px;
-        border-radius: 50%;
-        background: #3b82f6; /* Blue Thumb */
-        border: 2px solid #050505;
-        box-shadow: 0 0 10px rgba(59, 130, 246, 0.8);
-        margin-top: -5px; /* (TrackHeight 4px - ThumbHeight 14px) / 2 */
-        position: relative;
-        z-index: 10;
-      }
-
-      input[type=range]::-webkit-slider-runnable-track {
-        width: 100%;
-        height: 4px;
-        cursor: pointer;
-        background: #52525b; /* Zinc-600 - VISIBLE Gray Track */
-        border-radius: 2px;
-        border: none;
-      }
-
-      /* FIREFOX */
-      input[type=range]::-moz-range-thumb {
-        height: 14px;
-        width: 14px;
-        border: 2px solid #050505;
-        border-radius: 50%;
-        background: #3b82f6;
-        cursor: pointer;
-        box-shadow: 0 0 10px rgba(59, 130, 246, 0.8);
-      }
-
-      input[type=range]::-moz-range-track {
-        width: 100%;
-        height: 4px;
-        cursor: pointer;
-        background: #52525b; /* Zinc-600 - VISIBLE Gray Track */
-        border-radius: 2px;
-      }
-
-      input[type=range]:focus {
-        outline: none;
-      }
-
-      /* Custom Select Arrow */
-      select {
-        appearance: none;
-        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2352525b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-        background-repeat: no-repeat;
-        background-position: right 0.5rem center;
-        background-size: 1em;
+      body {
+        background-color: #0f172a; /* Slate 950 */
+        color: #e2e8f0; /* Slate 200 */
       }
     </style>
   <script type="importmap">
 {
   "imports": {
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "recharts": "https://aistudiocdn.com/recharts@^3.4.1",
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "lightweight-charts": "https://aistudiocdn.com/lightweight-charts@^5.0.9",
-    "path": "https://aistudiocdn.com/path@^0.12.7",
-    "vite": "https://aistudiocdn.com/vite@^7.2.4",
-    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1"
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
   }
 }
 </script>

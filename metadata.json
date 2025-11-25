@@ -1,5 +1,5 @@
 {
-  "name": "LiqMap Pro",
-  "description": "A professional-grade crypto liquidation heatmap visualizer using Binance market data. It calculates and visualizes estimated liquidation clusters to help traders identify high-risk liquidity zones.",
+  "name": "UniV3 LP & Hedge Simulator",
+  "description": "A professional-grade liquidity pool analytics tool simulating PnL, Impermanent Loss, and hedging strategies based on Uniswap V3 mathematics.",
   "requestFramePermissions": []
 }
